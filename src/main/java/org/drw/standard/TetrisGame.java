@@ -29,6 +29,28 @@ public class TetrisGame {
         }
     }
 
+    /** Returns a string representation of the grid for debugging. */
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        int height = getHeight();
+        if (height == 0) {
+            return "(empty)";
+        }
+        for (int i = height - 1; i >= 0; i--) {
+            int row = grid.get(i);
+            for (int j = 0; j < WIDTH; j++) {
+                if ((row & (1 << j)) != 0) {
+                    sb.append('#');
+                } else {
+                    sb.append('.');
+                }
+            }
+            sb.append('\n');
+        }
+        return sb.toString();
+    }
+
     /** Drop a piece at column x, apply line clears. */
     public void drop(Piece piece, int x) {
         Map<Integer, Integer> rows = piece.buildRowMasks(x);
@@ -42,6 +64,11 @@ public class TetrisGame {
 
         place(rows, y);
         clearFullRows();
+
+        // --- Debugging output ---
+         System.out.println("Dropped " + piece + " at " + x + ", height: " + getHeight());
+         System.out.println(this);
+         System.out.println("--------------------");
     }
 
     /** Return current height (top non-empty row + 1). */
