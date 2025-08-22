@@ -8,13 +8,8 @@ public enum Piece {
     T(new int[][] { {0,0},{1,0},{2,0},{1,1} }),
     S(new int[][] { {1,0},{2,0},{0,1},{1,1} }),
     Z(new int[][] { {0,0},{1,0},{1,1},{2,1} }),
-//    L(new int[][] { {0,0},{0,1},{0,2},{1,0} }),
-//    J(new int[][] { {1,0},{1,1},{1,2},{0,0} });
-    // L: 3 on bottom row, one above right
-    L(new int[][] { {0,0},{1,0},{2,0},{2,1} }),
-
-    // J: 3 on bottom row, one above left
-    J(new int[][] { {0,0},{1,0},{2,0},{0,1} });
+    L(new int[][] { {0,0},{0,1},{0,2},{1,0} }),
+    J(new int[][] { {1,0},{1,1},{1,2},{0,0} });
 
     private final int[][] shape;
 
