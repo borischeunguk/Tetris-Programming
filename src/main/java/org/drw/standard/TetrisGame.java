@@ -9,7 +9,7 @@ public class TetrisGame {
     private static final int WIDTH = 10;
     private static final int FULL_ROW_MASK = (1 << WIDTH) - 1;
 
-    private final List<Integer> grid = new ArrayList<>(); // row 0 = bottom
+    private List<Integer> grid = new ArrayList<>(); // row 0 = bottom
 
     public static void main(String[] args) throws Exception {
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
@@ -64,12 +64,22 @@ public class TetrisGame {
         }
 
         place(rows, y);
-        clearFullRows();
+        System.out.println("Dropped " + piece + " at " + x + ", height: " + getHeight());
+        System.out.println(this);
+        System.out.println("--------------------");
+        while(clearFullRows()) {
+            // --- Debugging output ---
+            System.out.println("Clear Full Rows, height: " + getHeight());
+            System.out.println(this);
+            System.out.println("--------------------");
+            resettleFloatingIslands();
+            // --- Debugging output ---
+            System.out.println("Resettle Floating Islands, height: " + getHeight());
+            System.out.println(this);
+            System.out.println("--------------------");
+        }
 
-        // --- Debugging output ---
-         System.out.println("Dropped " + piece + " at " + x + ", height: " + getHeight());
-         System.out.println(this);
-         System.out.println("--------------------");
+
     }
 
     /** Return current height (top non-empty row + 1). */
@@ -108,10 +118,84 @@ public class TetrisGame {
         }
     }
 
-    private void clearFullRows() {
-        boolean cleared;
+    private boolean clearFullRows() {
+        boolean clearedOnce = false;
+        boolean clearedInLoop;
         do {
-            cleared = grid.removeIf(row -> row == FULL_ROW_MASK);
-        } while (cleared && !grid.isEmpty());
+            clearedInLoop = grid.removeIf(row -> row == FULL_ROW_MASK);
+            if (clearedInLoop) {
+                clearedOnce = true;
+            }
+        } while (clearedInLoop && !grid.isEmpty());
+        return clearedOnce;
+    }
+
+    private void resettleFloatingIslands() {
+        if (grid.isEmpty()) return;
+
+        List<Integer> originalGrid = new ArrayList<>(grid);
+        boolean[][] visited = new boolean[originalGrid.size()][WIDTH];
+        grid.clear();
+
+        for (int y = originalGrid.size() - 1; y >= 0; y--) {
+            for (int x = 0; x < WIDTH; x++) {
+                if (!visited[y][x] && (originalGrid.get(y) & (1 << x)) != 0) {
+                    // Found a new, unvisited island.
+                    Map<Integer, Integer> island = new HashMap<>();
+                    collectIsland(y, x, originalGrid, visited, island);
+                    dropIsland(island);
+                }
+            }
+        }
+    }
+
+    private void collectIsland(int startY, int startX, List<Integer> sourceGrid, boolean[][] visited, Map<Integer, Integer> island) {
+        Deque<int[]> stack = new ArrayDeque<>();
+        stack.push(new int[]{startY, startX});
+        visited[startY][startX] = true;
+
+        int minIslandY = startY;
+
+        while (!stack.isEmpty()) {
+            int[] pos = stack.pop();
+            int curY = pos[0];
+            int curX = pos[1];
+
+            minIslandY = Math.min(minIslandY, curY);
+            int bit = 1 << curX;
+            island.put(curY, island.getOrDefault(curY, 0) | bit);
+
+            int[] dy = {-1, 1, 0, 0};
+            int[] dx = {0, 0, -1, 1};
+
+            for (int i = 0; i < 4; i++) {
+                int nextY = curY + dy[i];
+                int nextX = curX + dx[i];
+
+                if (nextY >= 0 && nextY < sourceGrid.size() && nextX >= 0 && nextX < WIDTH &&
+                        !visited[nextY][nextX] && (sourceGrid.get(nextY) & (1 << nextX)) != 0) {
+                    visited[nextY][nextX] = true;
+                    stack.push(new int[]{nextY, nextX});
+                }
+            }
+        }
+
+        // Normalize island to be relative to its own lowest point
+        Map<Integer, Integer> normalizedIsland = new HashMap<>();
+        for (Map.Entry<Integer, Integer> entry : island.entrySet()) {
+            normalizedIsland.put(entry.getKey() - minIslandY, entry.getValue());
+        }
+        island.clear();
+        island.putAll(normalizedIsland);
+    }
+
+    private void dropIsland(Map<Integer, Integer> island) {
+        int y = getHeight();
+        while (true) {
+            if (y == 0) break;
+            if (collides(island, y - 1)) break;
+            y--;
+        }
+        place(island, y);
     }
 }
