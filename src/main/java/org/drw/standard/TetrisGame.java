@@ -67,9 +67,9 @@ public class TetrisGame {
         clearFullRows();
 
         // --- Debugging output ---
-         System.out.println("Dropped " + piece + " at " + x + ", height: " + getHeight());
-         System.out.println(this);
-         System.out.println("--------------------");
+//         System.out.println("Dropped " + piece + " at " + x + ", height: " + getHeight());
+//         System.out.println(this);
+//         System.out.println("--------------------");
     }
 
     /** Return current height (top non-empty row + 1). */
