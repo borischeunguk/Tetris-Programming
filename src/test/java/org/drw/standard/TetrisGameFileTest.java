@@ -28,19 +28,22 @@ public class TetrisGameFileTest {
 
             String line;
             while ((line = reader.readLine()) != null) {
+                System.out.println("Input: " + line);
+                System.out.println("--------------------");
                 line = line.trim();
+                int height;
                 if (line.isEmpty()) {
-                    writer.write("0");
-                    writer.newLine();
-                    continue;
+                    height = 0;
+                } else {
+                    List<Drop> seq = Parser.parseLine(line);
+                    TetrisGame game = new TetrisGame();
+                    for (Drop d : seq) {
+                        game.drop(d.piece(), d.x());
+                    }
+                    height = game.getHeight();
                 }
-
-                List<Drop> seq = Parser.parseLine(line);
-                TetrisGame game = new TetrisGame();
-                for (Drop d : seq) {
-                    game.drop(d.piece(), d.x());
-                }
-                int height = game.getHeight();
+                System.out.println("Output: " + height);
+                System.out.println("----------------------------------------");
                 writer.write(String.valueOf(height));
                 writer.newLine();
             }
