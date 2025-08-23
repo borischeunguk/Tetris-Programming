@@ -1,5 +1,8 @@
 package org.drw.standard;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.*;
@@ -8,8 +11,18 @@ import java.util.*;
 public class TetrisGame {
     private static final int WIDTH = 10;
     private static final int FULL_ROW_MASK = (1 << WIDTH) - 1;
+    private static final Logger logger = LogManager.getLogger(TetrisGame.class);
 
     private List<Integer> grid = new ArrayList<>(); // row 0 = bottom
+    private final boolean resettleEnabled;
+
+    public TetrisGame() {
+        this(false);
+    }
+
+    public TetrisGame(boolean resettleEnabled) {
+        this.resettleEnabled = resettleEnabled;
+    }
 
     public static void main(String[] args) throws Exception {
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
@@ -21,6 +34,8 @@ public class TetrisGame {
                 continue;
             }
             List<Drop> seq = Parser.parseLine(line);
+            // To enable resettling from main, you could check a command-line arg, for example.
+            // For now, it uses the default (false).
             TetrisGame game = new TetrisGame();
             for (Drop d : seq) {
                 game.drop(d.piece(), d.x());
@@ -64,22 +79,18 @@ public class TetrisGame {
         }
 
         place(rows, y);
-        System.out.println("Dropped " + piece + " at " + x + ", height: " + getHeight());
-        System.out.println(this);
-        System.out.println("--------------------");
-        while(clearFullRows()) {
-            // --- Debugging output ---
-            System.out.println("Clear Full Rows, height: " + getHeight());
-            System.out.println(this);
-            System.out.println("--------------------");
-            resettleFloatingIslands();
-            // --- Debugging output ---
-            System.out.println("Resettle Floating Islands, height: " + getHeight());
-            System.out.println(this);
-            System.out.println("--------------------");
+        logger.debug("Dropped {} at {}, height: {}\n{}", piece, x, getHeight(), this);
+
+        if(resettleEnabled){
+            while(clearFullRows()) {
+                logger.debug("Grid after clearing rows:\n{}", this);
+                resettleFloatingIslands();
+                logger.debug("Grid after resettling islands:\n{}", this);
+            }
+        }else{
+            clearFullRows();
+            logger.debug("Grid after clearing rows:\n{}", this);
         }
-
-
     }
 
     /** Return current height (top non-empty row + 1). */
@@ -130,6 +141,8 @@ public class TetrisGame {
         return clearedOnce;
     }
 
+    // Resettle floating islands after line clears.
+    // This is not required by the spec, but is an interesting extension.
     private void resettleFloatingIslands() {
         if (grid.isEmpty()) return;
 
