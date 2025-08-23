@@ -7,23 +7,45 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.*;
 
-
+/**
+ * Manages the state and logic of a Tetris game on a 10-wide grid.
+ * The grid is represented by a list of integer bitmasks, where each bit
+ * corresponds to a cell in a row.
+ */
 public class TetrisGame {
+    /** The width of the game board. */
     private static final int WIDTH = 10;
+    /** A bitmask representing a completely full row, used for line clearing. */
     private static final int FULL_ROW_MASK = (1 << WIDTH) - 1;
+    /** Logger for debugging and informational output. */
     private static final Logger logger = LogManager.getLogger(TetrisGame.class);
 
-    private List<Integer> grid = new ArrayList<>(); // row 0 = bottom
+    /** The game grid, where each integer is a bitmask for a row. Row 0 is the bottom. */
+    private List<Integer> grid = new ArrayList<>();
+    /** A flag to control whether to resettle floating blocks after a line clear. */
     private final boolean resettleEnabled;
 
+    /**
+     * Default constructor. Initializes a game with the 'resettle floating islands' feature disabled.
+     */
     public TetrisGame() {
         this(false);
     }
 
+    /**
+     * Constructs a TetrisGame with a specific setting for the resettling feature.
+     * @param resettleEnabled If true, floating blocks will drop down after line clears.
+     */
     public TetrisGame(boolean resettleEnabled) {
         this.resettleEnabled = resettleEnabled;
     }
 
+    /**
+     * Main entry point for running the game from the command line.
+     * Reads sequences of piece drops from standard input and prints the final height for each.
+     * @param args Command line arguments (not used).
+     * @throws Exception if there is an error reading input or parsing.
+     */
     public static void main(String[] args) throws Exception {
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
         String line;
@@ -44,7 +66,10 @@ public class TetrisGame {
         }
     }
 
-    /** Returns a string representation of a grid for debugging. */
+    /**
+     * Returns a string representation of the current grid state for debugging.
+     * @return A multi-line string visualizing the grid, or "(empty)" if the grid is empty.
+     */
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
@@ -67,7 +92,13 @@ public class TetrisGame {
         return sb.toString();
     }
 
-    /** Drop a piece at column x, apply line clears. */
+    /**
+     * Processes a single piece drop. This involves finding the final resting height of the piece,
+     * placing it on the grid, and then clearing any full lines.
+     *
+     * @param piece The piece to drop.
+     * @param x     The starting horizontal column for the piece.
+     */
     public void drop(Piece piece, int x) {
         Map<Integer, Integer> rows = piece.buildRowMasks(x);
 
@@ -88,12 +119,16 @@ public class TetrisGame {
                 logger.debug("Grid after resettling islands:\n{}", this);
             }
         }else{
-            clearFullRows();
-            logger.debug("Grid after clearing rows:\n{}", this);
+            if (clearFullRows()) {
+                logger.debug("Grid after clearing rows:\n{}", this);
+            }
         }
     }
 
-    /** Return current height (top non-empty row + 1). */
+    /**
+     * Calculates the current height of the grid.
+     * @return The number of the highest non-empty row plus one. Returns 0 for an empty grid.
+     */
     public int getHeight() {
         for (int i = grid.size() - 1; i >= 0; i--) {
             if (grid.get(i) != 0) return i + 1;
@@ -103,6 +138,12 @@ public class TetrisGame {
 
     // ----- internals -----
 
+    /**
+     * Checks if a piece at a given vertical position collides with existing blocks.
+     * @param rows A map of the piece's row bitmasks.
+     * @param y    The target bottom-most row index for the piece.
+     * @return True if there is a collision, false otherwise.
+     */
     private boolean collides(Map<Integer, Integer> rows, int y) {
         for (var e : rows.entrySet()) {
             int rowIdx = y + e.getKey();
@@ -114,6 +155,11 @@ public class TetrisGame {
         return false;
     }
 
+    /**
+     * Places a piece's bitmasks onto the grid at a specific vertical position.
+     * @param rows The map of the piece's row bitmasks.
+     * @param y    The final bottom-most row index for the piece.
+     */
     private void place(Map<Integer, Integer> rows, int y) {
         int maxDy = rows.keySet().stream().max(Integer::compare).orElse(0);
         ensureRows(y + maxDy);
@@ -123,26 +169,29 @@ public class TetrisGame {
         }
     }
 
+    /**
+     * Ensures the grid has enough rows to accommodate a piece being placed.
+     * @param idxInclusive The highest row index that needs to exist.
+     */
     private void ensureRows(int idxInclusive) {
         while (grid.size() <= idxInclusive) {
             grid.add(0);
         }
     }
 
+    /**
+     * Removes all full rows from the grid.
+     * @return True if at least one row was cleared, false otherwise.
+     */
     private boolean clearFullRows() {
-        boolean clearedOnce = false;
-        boolean clearedInLoop;
-        do {
-            clearedInLoop = grid.removeIf(row -> row == FULL_ROW_MASK);
-            if (clearedInLoop) {
-                clearedOnce = true;
-            }
-        } while (clearedInLoop && !grid.isEmpty());
-        return clearedOnce;
+        return grid.removeIf(row -> row == FULL_ROW_MASK);
     }
 
-    // Resettle floating islands after line clears.
-    // This is not required by the spec, but is an interesting extension.
+    /**
+     * (Optional Feature) Finds all contiguous groups of blocks ("islands") and drops them
+     * individually as if they were new pieces. This settles any floating blocks
+     * left after a line clear.
+     */
     private void resettleFloatingIslands() {
         if (grid.isEmpty()) return;
 
@@ -150,6 +199,7 @@ public class TetrisGame {
         boolean[][] visited = new boolean[originalGrid.size()][WIDTH];
         grid.clear();
 
+        // Iterate from top to bottom to drop higher islands first.
         for (int y = originalGrid.size() - 1; y >= 0; y--) {
             for (int x = 0; x < WIDTH; x++) {
                 if (!visited[y][x] && (originalGrid.get(y) & (1 << x)) != 0) {
@@ -162,12 +212,21 @@ public class TetrisGame {
         }
     }
 
+    /**
+     * Uses a depth-first search (DFS) to find all connected blocks belonging to a single island.
+     * @param startY The starting Y coordinate for the search.
+     * @param startX The starting X coordinate for the search.
+     * @param sourceGrid The original grid to search within.
+     * @param visited A 2D array to track visited cells to avoid reprocessing.
+     * @param island  The map to populate with the island's normalized bitmasks.
+     */
     private void collectIsland(int startY, int startX, List<Integer> sourceGrid, boolean[][] visited, Map<Integer, Integer> island) {
         Deque<int[]> stack = new ArrayDeque<>();
         stack.push(new int[]{startY, startX});
         visited[startY][startX] = true;
 
         int minIslandY = startY;
+        Map<Integer, Integer> rawIsland = new HashMap<>();
 
         while (!stack.isEmpty()) {
             int[] pos = stack.pop();
@@ -176,8 +235,9 @@ public class TetrisGame {
 
             minIslandY = Math.min(minIslandY, curY);
             int bit = 1 << curX;
-            island.put(curY, island.getOrDefault(curY, 0) | bit);
+            rawIsland.put(curY, rawIsland.getOrDefault(curY, 0) | bit);
 
+            // Check 4 neighbors (up, down, left, right)
             int[] dy = {-1, 1, 0, 0};
             int[] dx = {0, 0, -1, 1};
 
@@ -193,15 +253,16 @@ public class TetrisGame {
             }
         }
 
-        // Normalize island to be relative to its own lowest point
-        Map<Integer, Integer> normalizedIsland = new HashMap<>();
-        for (Map.Entry<Integer, Integer> entry : island.entrySet()) {
-            normalizedIsland.put(entry.getKey() - minIslandY, entry.getValue());
+        // Normalize island coordinates to be relative to its own lowest point (dy=0)
+        for (Map.Entry<Integer, Integer> entry : rawIsland.entrySet()) {
+            island.put(entry.getKey() - minIslandY, entry.getValue());
         }
-        island.clear();
-        island.putAll(normalizedIsland);
     }
 
+    /**
+     * Drops a collected island onto the current game grid.
+     * @param island A map of bitmasks representing the island, normalized to its own origin.
+     */
     private void dropIsland(Map<Integer, Integer> island) {
         int y = getHeight();
         while (true) {
