@@ -29,7 +29,7 @@ public class TetrisGame {
         }
     }
 
-    /** Returns a string representation of the grid for debugging. */
+    /** Returns a string representation of a grid for debugging. */
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
@@ -67,9 +67,9 @@ public class TetrisGame {
         clearFullRows();
 
         // --- Debugging output ---
-//         System.out.println("Dropped " + piece + " at " + x + ", height: " + getHeight());
-//         System.out.println(this);
-//         System.out.println("--------------------");
+         System.out.println("Dropped " + piece + " at " + x + ", height: " + getHeight());
+         System.out.println(this);
+         System.out.println("--------------------");
     }
 
     /** Return current height (top non-empty row + 1). */
@@ -109,16 +109,9 @@ public class TetrisGame {
     }
 
     private void clearFullRows() {
-        int write = 0;
-        for (int read = 0; read < grid.size(); read++) {
-            int row = grid.get(read);
-            if (row != FULL_ROW_MASK) {
-                if (write != read) grid.set(write, row);
-                write++;
-            }
-        }
-        while (grid.size() > write) {
-            grid.remove(grid.size() - 1);
-        }
+        boolean cleared;
+        do {
+            cleared = grid.removeIf(row -> row == FULL_ROW_MASK);
+        } while (cleared && !grid.isEmpty());
     }
 }
