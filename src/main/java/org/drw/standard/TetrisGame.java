@@ -38,6 +38,7 @@ public class TetrisGame {
             return "(empty)";
         }
         for (int i = height - 1; i >= 0; i--) {
+            sb.append(String.format("%2d: ", i));
             int row = grid.get(i);
             for (int j = 0; j < WIDTH; j++) {
                 if ((row & (1 << j)) != 0) {
@@ -55,7 +56,7 @@ public class TetrisGame {
     public void drop(Piece piece, int x) {
         Map<Integer, Integer> rows = piece.buildRowMasks(x);
 
-        int y = getHeight() + 10; // start above stack
+        int y = getHeight();
         while (true) {
             if (y == 0) break;
             if (collides(rows, y - 1)) break;
@@ -84,6 +85,7 @@ public class TetrisGame {
     private boolean collides(Map<Integer, Integer> rows, int y) {
         for (var e : rows.entrySet()) {
             int rowIdx = y + e.getKey();
+            if (rowIdx < 0) return true; // Collision with the floor
             if (rowIdx < grid.size() && (grid.get(rowIdx) & e.getValue()) != 0) {
                 return true;
             }
