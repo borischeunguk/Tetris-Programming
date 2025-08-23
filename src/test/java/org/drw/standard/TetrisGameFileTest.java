@@ -1,5 +1,7 @@
 package org.drw.standard;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Test;
 
 import java.io.*;
@@ -14,6 +16,8 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 public class TetrisGameFileTest {
 
+    private static final Logger logger = LogManager.getLogger(TetrisGameFileTest.class);
+
     @Test
     void processInputFileAndWriteOutput() {
         String inputResourcePath = "/input.txt";
@@ -26,10 +30,10 @@ public class TetrisGameFileTest {
              BufferedReader reader = new BufferedReader(new InputStreamReader(Objects.requireNonNull(inputStream)));
              BufferedWriter writer = Files.newBufferedWriter(Paths.get(outputFilePath))) {
 
+            logger.info("Processing test input file...");
             String line;
             while ((line = reader.readLine()) != null) {
-                System.out.println("Input: " + line);
-                System.out.println("--------------------");
+                logger.debug("Input line: {}", line);
                 line = line.trim();
                 int height;
                 if (line.isEmpty()) {
@@ -42,11 +46,11 @@ public class TetrisGameFileTest {
                     }
                     height = game.getHeight();
                 }
-                System.out.println("Output: " + height);
-                System.out.println("----------------------------------------");
+                logger.debug("Calculated height: {}", height);
                 writer.write(String.valueOf(height));
                 writer.newLine();
             }
+            logger.info("Finished processing test input file.");
         } catch (IOException | NullPointerException e) {
             fail("Error processing test file: " + e.getMessage(), e);
         }
