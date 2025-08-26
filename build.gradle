@@ -34,6 +34,8 @@ jar {
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     }
+    // Include source code in the jar for interview purposes
+    from sourceSets.main.allSource
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     archiveBaseName = 'tetris'
     archiveVersion = ''
