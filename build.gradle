@@ -34,8 +34,33 @@ jar {
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     }
-    // Include source code in the jar for interview purposes
-    from sourceSets.main.allSource
+    // Include all source code in the jar for interview purposes
+    from('src/main/java') {
+        into 'src/main/java'
+    }
+    from('src/test/java') {
+        into 'src/test/java'
+    }
+    from('src/main/resources') {
+        into 'src/main/resources'
+    }
+    from('src/test/resources') {
+        into 'src/test/resources'
+    }
+    // Include project configuration and documentation files
+    from('.') {
+        include 'build.gradle'
+        include 'README.md'
+        include 'settings.gradle'
+        include 'gradlew'
+        include 'gradlew.bat'
+        include 'LICENSE'
+        into 'project-files'
+    }
+    // Include gradle wrapper directory
+    from('gradle') {
+        into 'project-files/gradle'
+    }
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     archiveBaseName = 'tetris'
     archiveVersion = ''
