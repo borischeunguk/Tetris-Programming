@@ -1,4 +1,4 @@
-# DRW Tetris Programming Exercise
+# Tetris Programming Exercise
 
 A high-performance Tetris simulation engine that processes sequences of piece drops and calculates the resulting grid height. Built for DRW's technical assessment with focus on correctness, performance, and maintainability.
 Source code is available in jar file, and uploaded to github: https://github.com/borischeunguk/Tetris-Programming
